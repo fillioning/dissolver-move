@@ -40,8 +40,8 @@ jobs:
               -I/repo/src/dsp \
               -lm
             cp /repo/module.json /repo/dist/dissolver/
+            cd /repo && tar -czf dist/dissolver-module.tar.gz -C dist dissolver
           "
-          tar -czf dist/dissolver-module.tar.gz -C dist dissolver
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
