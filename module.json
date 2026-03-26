@@ -1,0 +1,56 @@
+{
+    "id": "dissolver",
+    "name": "Dissolver",
+    "abbrev": "DSLVR",
+    "version": "0.1.0",
+    "description": "Spectral smearing pad generator — kills transients, preserves harmonic content, blends temporality into evolving pads.",
+    "author": "fillioning",
+    "dsp": "dissolver.so",
+    "api_version": 2,
+    "component_type": "audio_fx",
+    "capabilities": {
+        "chainable": true,
+        "component_type": "audio_fx",
+        "ui_hierarchy": {
+            "modes": null,
+            "levels": {
+                "root": {
+                    "name": "Dissolver",
+                    "knobs": ["smoothing", "freeze", "grain_size", "density", "evolution", "decay", "brightness", "mix"],
+                    "params": [
+                        { "level": "Dissolver", "label": "Dissolver" },
+                        { "level": "Advanced", "label": "Advanced" }
+                    ]
+                },
+                "Dissolver": {
+                    "label": "Dissolver",
+                    "knobs": ["smoothing", "freeze", "grain_size", "density", "evolution", "decay", "brightness", "mix"],
+                    "params": [
+                        { "key": "smoothing",  "label": "Dissolve",   "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
+                        { "key": "freeze",     "label": "Freeze",     "type": "float", "min": 0, "max": 1, "default": 0.3,  "step": 0.01 },
+                        { "key": "grain_size", "label": "Stretch",    "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
+                        { "key": "density",    "label": "Spread",     "type": "float", "min": 0, "max": 1, "default": 0.6,  "step": 0.01 },
+                        { "key": "evolution",  "label": "Evolution",  "type": "float", "min": 0, "max": 1, "default": 1.0,  "step": 0.01 },
+                        { "key": "decay",      "label": "Decay",      "type": "float", "min": 0, "max": 1, "default": 0.6,  "step": 0.01 },
+                        { "key": "brightness", "label": "Tone",       "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
+                        { "key": "mix",        "label": "Dry/Wet",    "type": "float", "min": 0, "max": 1, "default": 0.7,  "step": 0.01 }
+                    ]
+                },
+                "Advanced": {
+                    "label": "Advanced",
+                    "knobs": ["stereo_width", "grain_jitter", "evo_depth", "attack_time", "release_time", "feedback_cap", "tilt_freq", "output_level"],
+                    "params": [
+                        { "key": "stereo_width",  "label": "Stereo Width",  "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
+                        { "key": "grain_jitter",  "label": "Compress",      "type": "float", "min": 0, "max": 1, "default": 0.2,  "step": 0.01 },
+                        { "key": "evo_depth",     "label": "Spread Depth",  "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
+                        { "key": "attack_time",   "label": "Attack Time",   "type": "float", "min": 0, "max": 1, "default": 0.1,  "step": 0.01 },
+                        { "key": "release_time",  "label": "Release Time",  "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
+                        { "key": "feedback_cap",  "label": "Feedback Cap",  "type": "float", "min": 0, "max": 1, "default": 0.85, "step": 0.01 },
+                        { "key": "tilt_freq",     "label": "Tilt Freq",     "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
+                        { "key": "output_level",  "label": "Output Level",  "type": "float", "min": 0, "max": 1, "default": 0.8,  "step": 0.01 }
+                    ]
+                }
+            }
+        }
+    }
+}

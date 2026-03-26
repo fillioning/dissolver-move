@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify version match
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          MODULE_VERSION=$(grep '"version"' src/module.json | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+          if [ "$TAG_VERSION" != "$MODULE_VERSION" ]; then
+            echo "ERROR: Tag version ($TAG_VERSION) does not match module.json version ($MODULE_VERSION)"
+            exit 1
+          fi
+          echo "Version check passed: $TAG_VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build with Docker
+        run: |
+          docker build -t module-builder -f Dockerfile .
+          docker run --rm -v "$PWD:/build" -w /build module-builder bash -c "
+            dos2unix /build/src/dsp/*.c /build/src/dsp/*.h 2>/dev/null || true
+            mkdir -p /build/dist/dissolver
+            aarch64-linux-gnu-gcc \
+              -O2 -shared -fPIC -ffast-math \
+              -DPFFFT_SIMD_DISABLE \
+              -o /build/dist/dissolver/dissolver.so \
+              /build/src/dsp/dissolver.c \
+              /build/src/dsp/dissolver_spectral.c \
+              /build/src/dsp/pffft.c \
+              -I/build/src/dsp \
+              -lm
+            cp /build/module.json /build/dist/dissolver/
+          "
+          tar -czf dist/dissolver-module.tar.gz -C dist dissolver
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/dissolver-module.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit release.json
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          git fetch origin main
+          git checkout -f main
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cat > release.json << EOF
+          {
+            "version": "${VERSION}",
+            "download_url": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dissolver-module.tar.gz"
+          }
+          EOF
+          git add release.json
+          git commit -m "ci: update release.json for ${{ github.ref_name }}" || echo "No changes to commit"
+          git push origin main

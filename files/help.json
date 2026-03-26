@@ -1,0 +1,47 @@
+{
+  "module_id": "dissolver",
+  "name": "Dissolver",
+  "tagline": "Spectral Smearing Pad Generator",
+  "description": "Dissolves transients and smears harmonic content into evolving pads. Feed it anything — drums, vocals, guitars — and it extracts the sustained harmonic essence, freezing and blending it into a living, breathing texture.",
+  "parameters": {
+    "smoothing": {
+      "label": "Smoothing",
+      "help": "Controls how aggressively transients are suppressed. At 0%, the full attack passes through. At 100%, all percussive onsets are erased, leaving only the sustained harmonic body of the sound."
+    },
+    "freeze": {
+      "label": "Freeze",
+      "help": "Blends between live spectral content and a frozen snapshot. At 0%, the output follows the input in real-time. At 100%, the harmonic content is held indefinitely, creating a static drone from whatever was last captured."
+    },
+    "grain_size": {
+      "label": "Grain Size",
+      "help": "Sets the window size for the granular smearing engine. Small grains (~5ms) preserve more detail and pitch clarity. Large grains (~85ms) create a deep, blurred wash where individual notes merge into texture."
+    },
+    "density": {
+      "label": "Density",
+      "help": "Controls how many grains overlap simultaneously. Low density creates a more sparse, flickering texture. High density layers many grains into a thick, organ-like pad."
+    },
+    "evolution": {
+      "label": "Evolution",
+      "help": "Sets how fast the frozen spectrum drifts and morphs over time. At 0%, the frozen content is static. Higher values introduce slow spectral wandering that keeps the pad alive and breathing."
+    },
+    "brightness": {
+      "label": "Brightness",
+      "help": "Tilts the spectral balance of the output. At noon (50%), the timbre is neutral. Turn left for darker, warmer pads. Turn right for brighter, airier textures."
+    },
+    "mix": {
+      "label": "Dry/Wet",
+      "help": "Blends between the original input signal and the dissolved pad output. At 100% wet, you hear only the pad. Backing off adds some of the original transients back for rhythmic context."
+    },
+    "decay": {
+      "label": "Decay",
+      "help": "Controls how long the pad tail sustains after the input stops. Short decay lets the pad fade quickly. Long decay creates lingering, reverb-like sustain that can ring for several seconds."
+    }
+  },
+  "tips": [
+    "Feed a drum loop and set Smoothing to 100% — the rhythm disappears and you're left with the resonant body of the drums as a pad.",
+    "Use Freeze at ~80% with a slow Evolution to capture a vocal phrase and turn it into a slowly shifting drone.",
+    "Try small Grain Size with high Density for a shimmering, granular cloud effect.",
+    "Large Grain Size with low Density creates a lo-fi, tape-loop-like smearing effect.",
+    "Set Mix to ~60% to keep some transient ghost underneath the pad for rhythmic anchoring."
+  ]
+}

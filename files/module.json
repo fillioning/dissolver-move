@@ -1,0 +1,82 @@
+{
+  "module_id": "dissolver",
+  "version": "1.0.0",
+  "name": "Dissolver",
+  "description": "Spectral smearing pad generator. Kills transients, preserves harmonic content, and blends temporality into evolving pads. Inspired by GRM Tools Evolution.",
+  "author": "fillioning",
+  "component_type": "audio_fx",
+  "parameters": [
+    {
+      "id": "smoothing",
+      "name": "Smoothing",
+      "short_name": "SMOOTH",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "description": "Transient suppression strength. At max, all attacks are erased."
+    },
+    {
+      "id": "freeze",
+      "name": "Freeze",
+      "short_name": "FREEZE",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3,
+      "description": "How much spectral content is held vs. updated from new input."
+    },
+    {
+      "id": "grain_size",
+      "name": "Grain Size",
+      "short_name": "GRAIN",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "description": "Window size for the overlap-add smearing. Small = detailed, large = blurred."
+    },
+    {
+      "id": "density",
+      "name": "Density",
+      "short_name": "DENSE",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6,
+      "description": "Grain overlap factor. Higher = thicker, more pad-like texture."
+    },
+    {
+      "id": "evolution",
+      "name": "Evolution",
+      "short_name": "EVOL",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "description": "Rate at which the frozen spectrum drifts and morphs over time."
+    },
+    {
+      "id": "brightness",
+      "name": "Brightness",
+      "short_name": "BRIGHT",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "description": "Spectral tilt. Low = dark/warm, high = bright/airy."
+    },
+    {
+      "id": "mix",
+      "name": "Dry/Wet",
+      "short_name": "MIX",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.7,
+      "description": "Blend between dry input and dissolved pad output."
+    },
+    {
+      "id": "decay",
+      "name": "Decay",
+      "short_name": "DECAY",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6,
+      "description": "How long the pad tail sustains after input stops."
+    }
+  ]
+}
