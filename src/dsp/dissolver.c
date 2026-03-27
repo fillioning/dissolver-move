@@ -199,21 +199,21 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
     inst->current_page = 0;
 
     /* Page 1 defaults */
-    inst->smoothing   = 0.5f;    /* Dissolve 50% */
-    inst->freeze      = 0.0f;    /* Freeze off */
-    inst->grain_size  = 0.3f;    /* Stretch 30% */
-    inst->density     = 1.0f;    /* Spread 100% */
-    inst->evolution   = 0.3f;    /* Evolution 30% */
+    inst->smoothing   = 1.0f;    /* Dissolve 100% */
+    inst->freeze      = 0.2f;    /* Freeze 20% */
+    inst->grain_size  = 0.5f;    /* Stretch 50% */
+    inst->density     = 0.0f;    /* Spread 0% */
+    inst->evolution   = 1.0f;    /* Evolution 100% */
     inst->brightness  = 0.5f;    /* Tone 50% */
     inst->mix         = 1.0f;    /* Dry/Wet 100% */
-    inst->decay       = 1.0f;    /* Decay 100% */
+    inst->decay       = 0.5f;    /* Decay 50% */
 
     /* Page 2 defaults */
     inst->noise_mix     = 0.0f;
     inst->noise_tone    = 0.0f;    /* white noise by default */
     inst->stereo_width  = 0.5f;
     inst->grain_jitter  = 0.2f;
-    inst->evo_depth     = 1.0f;    /* Spread Depth 100% */
+    inst->evo_depth     = 0.5f;    /* Spread Depth 50% */
     inst->feedback_cap  = 0.85f;
     inst->tilt_freq     = 0.5f;
     inst->output_level  = 0.8f;
