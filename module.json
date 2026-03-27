@@ -2,7 +2,7 @@
     "id": "dissolver",
     "name": "Dissolver",
     "abbrev": "DSLVR",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Spectral smearing pad generator — kills transients, preserves harmonic content, blends temporality into evolving pads.",
     "author": "fillioning",
     "dsp": "dissolver.so",
@@ -38,16 +38,18 @@
                 },
                 "Advanced": {
                     "label": "Advanced",
-                    "knobs": ["stereo_width", "grain_jitter", "evo_depth", "attack_time", "release_time", "feedback_cap", "tilt_freq", "output_level"],
+                    "knobs": ["noise_mix", "noise_tone", "stereo_width", "grain_jitter", "evo_depth", "feedback_cap", "tilt_freq", "output_level"],
                     "params": [
+                        { "key": "noise_mix",     "label": "Noise Mix",     "type": "float", "min": 0, "max": 1, "default": 0.0,  "step": 0.01 },
+                        { "key": "noise_tone",    "label": "Noise Tone",    "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
                         { "key": "stereo_width",  "label": "Stereo Width",  "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
                         { "key": "grain_jitter",  "label": "Compress",      "type": "float", "min": 0, "max": 1, "default": 0.2,  "step": 0.01 },
                         { "key": "evo_depth",     "label": "Spread Depth",  "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
-                        { "key": "attack_time",   "label": "Attack Time",   "type": "float", "min": 0, "max": 1, "default": 0.1,  "step": 0.01 },
-                        { "key": "release_time",  "label": "Release Time",  "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
                         { "key": "feedback_cap",  "label": "Feedback Cap",  "type": "float", "min": 0, "max": 1, "default": 0.85, "step": 0.01 },
                         { "key": "tilt_freq",     "label": "Tilt Freq",     "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 },
-                        { "key": "output_level",  "label": "Output Level",  "type": "float", "min": 0, "max": 1, "default": 0.8,  "step": 0.01 }
+                        { "key": "output_level",  "label": "Output Level",  "type": "float", "min": 0, "max": 1, "default": 0.8,  "step": 0.01 },
+                        { "key": "attack_time",   "label": "Attack Time",   "type": "float", "min": 0, "max": 1, "default": 0.1,  "step": 0.01 },
+                        { "key": "release_time",  "label": "Release Time",  "type": "float", "min": 0, "max": 1, "default": 0.5,  "step": 0.01 }
                     ]
                 }
             }

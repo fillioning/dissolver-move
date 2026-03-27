@@ -84,11 +84,11 @@ static const knob_def_t KNOB_MAP_P1[8] = {
 };
 
 static const knob_def_t KNOB_MAP_P2[8] = {
+    { "noise_mix",     "Noise Mix",      0, 1, 0.01f, 0, 1 },
+    { "noise_tone",    "Noise Tone",     0, 1, 0.01f, 0, 1 },
     { "stereo_width",  "Stereo Width",   0, 1, 0.01f, 0, 1 },
     { "grain_jitter",  "Compress",       0, 1, 0.01f, 0, 1 },  /* spectral compressor */
     { "evo_depth",     "Spread Depth",   0, 1, 0.01f, 0, 1 },  /* spread iterations */
-    { "attack_time",   "Attack Time",    0, 1, 0.01f, 0, 1 },  /* reserved */
-    { "release_time",  "Release Time",   0, 1, 0.01f, 0, 1 },  /* reserved */
     { "feedback_cap",  "Feedback Cap",   0, 1, 0.01f, 0, 1 },
     { "tilt_freq",     "Tilt Freq",      0, 1, 0.01f, 0, 1 },
     { "output_level",  "Output Level",   0, 1, 0.01f, 0, 1 },
@@ -104,6 +104,9 @@ typedef struct {
     DissolverChannel ch_l;
     DissolverChannel ch_r;
 
+    /* Page tracking for knob overlay */
+    int current_page;  /* 0 = Dissolver (root), 1 = Advanced */
+
     /* Page 1 params */
     float smoothing;
     float freeze;
@@ -114,15 +117,19 @@ typedef struct {
     float mix;
     float decay;
 
-    /* Page 2 params */
+    /* Page 2 params (knobs) */
+    float noise_mix;
+    float noise_tone;
     float stereo_width;
     float grain_jitter;
     float evo_depth;
-    float attack_time;
-    float release_time;
     float feedback_cap;
     float tilt_freq;
     float output_level;
+
+    /* Menu-only params */
+    float attack_time;
+    float release_time;
 } dissolver_instance_t;
 
 /* Lookup float param pointer by key string */
@@ -135,22 +142,23 @@ static float *param_ptr_by_key(dissolver_instance_t *inst, const char *key) {
     if (strcmp(key, "brightness") == 0)     return &inst->brightness;
     if (strcmp(key, "mix") == 0)            return &inst->mix;
     if (strcmp(key, "decay") == 0)          return &inst->decay;
+    if (strcmp(key, "noise_mix") == 0)      return &inst->noise_mix;
+    if (strcmp(key, "noise_tone") == 0)     return &inst->noise_tone;
     if (strcmp(key, "stereo_width") == 0)   return &inst->stereo_width;
     if (strcmp(key, "grain_jitter") == 0)   return &inst->grain_jitter;
     if (strcmp(key, "evo_depth") == 0)      return &inst->evo_depth;
-    if (strcmp(key, "attack_time") == 0)    return &inst->attack_time;
-    if (strcmp(key, "release_time") == 0)   return &inst->release_time;
     if (strcmp(key, "feedback_cap") == 0)   return &inst->feedback_cap;
     if (strcmp(key, "tilt_freq") == 0)      return &inst->tilt_freq;
     if (strcmp(key, "output_level") == 0)   return &inst->output_level;
+    if (strcmp(key, "attack_time") == 0)    return &inst->attack_time;
+    if (strcmp(key, "release_time") == 0)   return &inst->release_time;
     return NULL;
 }
 
-/* Find knob def by index (1-indexed knob number) across both pages */
-static const knob_def_t *find_knob_by_index(int knob_num) {
-    if (knob_num >= 1 && knob_num <= 8) return &KNOB_MAP_P1[knob_num - 1];
-    /* Page 2 knobs would need page-aware routing — handled by Shadow UI via key */
-    return NULL;
+/* Find knob def by index (1-indexed) on the given page */
+static const knob_def_t *find_knob_by_index(int knob_num, int page) {
+    if (knob_num < 1 || knob_num > 8) return NULL;
+    return (page == 1) ? &KNOB_MAP_P2[knob_num - 1] : &KNOB_MAP_P1[knob_num - 1];
 }
 
 /* Find knob def by key across both pages */
@@ -188,25 +196,31 @@ static void *create_instance(const char *module_dir, const char *json_defaults) 
             * (2.0f * 3.14159265f / 65536.0f);
     }
 
+    inst->current_page = 0;
+
     /* Page 1 defaults */
-    inst->smoothing   = 0.5f;
-    inst->freeze      = 0.3f;
-    inst->grain_size  = 0.5f;
-    inst->density     = 0.6f;
-    inst->evolution   = 1.0f;
-    inst->brightness  = 0.5f;
-    inst->mix         = 0.7f;
-    inst->decay       = 0.6f;
+    inst->smoothing   = 0.5f;    /* Dissolve 50% */
+    inst->freeze      = 0.0f;    /* Freeze off */
+    inst->grain_size  = 0.3f;    /* Stretch 30% */
+    inst->density     = 1.0f;    /* Spread 100% */
+    inst->evolution   = 0.3f;    /* Evolution 30% */
+    inst->brightness  = 0.5f;    /* Tone 50% */
+    inst->mix         = 1.0f;    /* Dry/Wet 100% */
+    inst->decay       = 1.0f;    /* Decay 100% */
 
     /* Page 2 defaults */
+    inst->noise_mix     = 0.0f;
+    inst->noise_tone    = 0.0f;    /* white noise by default */
     inst->stereo_width  = 0.5f;
     inst->grain_jitter  = 0.2f;
-    inst->evo_depth     = 0.5f;
-    inst->attack_time   = 0.1f;
-    inst->release_time  = 0.5f;
+    inst->evo_depth     = 1.0f;    /* Spread Depth 100% */
     inst->feedback_cap  = 0.85f;
     inst->tilt_freq     = 0.5f;
     inst->output_level  = 0.8f;
+
+    /* Menu-only defaults */
+    inst->attack_time   = 0.1f;
+    inst->release_time  = 0.5f;
 
     if (g_host && g_host->log) g_host->log("[dissolver] instance created");
     return inst;
@@ -228,10 +242,20 @@ static void set_param(void *instance, const char *key, const char *val) {
     dissolver_instance_t *inst = (dissolver_instance_t *)instance;
     if (!inst || !key || !val) return;
 
+    /* Page navigation: Schwung sends _level when user switches pages */
+    if (strcmp(key, "_level") == 0) {
+        if (strcmp(val, "Advanced") == 0) {
+            inst->current_page = 1;
+        } else {
+            inst->current_page = 0;  /* root, Dissolver, or any other → page 0 */
+        }
+        return;
+    }
+
     /* knob_N_adjust: Shadow UI sends when user turns knob N */
     if (strncmp(key, "knob_", 5) == 0 && strstr(key, "_adjust")) {
         int knob_num = atoi(key + 5);
-        const knob_def_t *k = find_knob_by_index(knob_num);
+        const knob_def_t *k = find_knob_by_index(knob_num, inst->current_page);
         if (k && k->key) {
             float *p = param_ptr_by_key(inst, k->key);
             if (p) {
@@ -253,11 +277,12 @@ static void set_param(void *instance, const char *key, const char *val) {
     if (strcmp(key, "state") == 0) {
         sscanf(val,
             "sm=%f;fr=%f;gs=%f;dn=%f;ev=%f;br=%f;mx=%f;dc=%f;"
-            "sw=%f;gj=%f;ed=%f;at=%f;rt=%f;fc=%f;tf=%f;ol=%f",
+            "sw=%f;gj=%f;ed=%f;at=%f;rt=%f;fc=%f;tf=%f;ol=%f;nm=%f;nt=%f",
             &inst->smoothing, &inst->freeze, &inst->grain_size, &inst->density,
             &inst->evolution, &inst->brightness, &inst->mix, &inst->decay,
             &inst->stereo_width, &inst->grain_jitter, &inst->evo_depth, &inst->attack_time,
-            &inst->release_time, &inst->feedback_cap, &inst->tilt_freq, &inst->output_level);
+            &inst->release_time, &inst->feedback_cap, &inst->tilt_freq, &inst->output_level,
+            &inst->noise_mix, &inst->noise_tone);
     }
 }
 
@@ -281,14 +306,16 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
             "{\"key\":\"decay\",\"name\":\"Decay\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
             "{\"key\":\"brightness\",\"name\":\"Tone\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
             "{\"key\":\"mix\",\"name\":\"Dry/Wet\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
+            "{\"key\":\"noise_mix\",\"name\":\"Noise Mix\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
+            "{\"key\":\"noise_tone\",\"name\":\"Noise Tone\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
             "{\"key\":\"stereo_width\",\"name\":\"Stereo Width\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
             "{\"key\":\"grain_jitter\",\"name\":\"Compress\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
             "{\"key\":\"evo_depth\",\"name\":\"Spread Depth\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
-            "{\"key\":\"attack_time\",\"name\":\"Attack Time\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
-            "{\"key\":\"release_time\",\"name\":\"Release Time\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
             "{\"key\":\"feedback_cap\",\"name\":\"Feedback Cap\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
             "{\"key\":\"tilt_freq\",\"name\":\"Tilt Freq\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
-            "{\"key\":\"output_level\",\"name\":\"Output Level\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01}"
+            "{\"key\":\"output_level\",\"name\":\"Output Level\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
+            "{\"key\":\"attack_time\",\"name\":\"Attack Time\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01},"
+            "{\"key\":\"release_time\",\"name\":\"Release Time\",\"type\":\"float\",\"min\":0,\"max\":1,\"step\":0.01}"
             "]");
     }
 
@@ -299,16 +326,18 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
     /* knob_N_name: Shadow UI popup label */
     if (strncmp(key, "knob_", 5) == 0 && strstr(key, "_name")) {
         int idx = atoi(key + 5) - 1;
-        if (idx >= 0 && idx < 8 && KNOB_MAP_P1[idx].label)
-            return snprintf(buf, buf_len, "%s", KNOB_MAP_P1[idx].label);
+        const knob_def_t *map = (inst->current_page == 1) ? KNOB_MAP_P2 : KNOB_MAP_P1;
+        if (idx >= 0 && idx < 8 && map[idx].label)
+            return snprintf(buf, buf_len, "%s", map[idx].label);
         return -1;
     }
 
     /* knob_N_value: Shadow UI popup value */
     if (strncmp(key, "knob_", 5) == 0 && strstr(key, "_value")) {
         int idx = atoi(key + 5) - 1;
-        if (idx >= 0 && idx < 8 && KNOB_MAP_P1[idx].key) {
-            float *kp = param_ptr_by_key(inst, KNOB_MAP_P1[idx].key);
+        const knob_def_t *map = (inst->current_page == 1) ? KNOB_MAP_P2 : KNOB_MAP_P1;
+        if (idx >= 0 && idx < 8 && map[idx].key) {
+            float *kp = param_ptr_by_key(inst, map[idx].key);
             if (kp) return snprintf(buf, buf_len, "%d%%", (int)(*kp * 100));
         }
         return -1;
@@ -318,11 +347,13 @@ static int get_param(void *instance, const char *key, char *buf, int buf_len) {
     if (strcmp(key, "state") == 0) {
         return snprintf(buf, buf_len,
             "sm=%.6f;fr=%.6f;gs=%.6f;dn=%.6f;ev=%.6f;br=%.6f;mx=%.6f;dc=%.6f;"
-            "sw=%.6f;gj=%.6f;ed=%.6f;at=%.6f;rt=%.6f;fc=%.6f;tf=%.6f;ol=%.6f",
+            "sw=%.6f;gj=%.6f;ed=%.6f;at=%.6f;rt=%.6f;fc=%.6f;tf=%.6f;ol=%.6f;"
+            "nm=%.6f;nt=%.6f",
             inst->smoothing, inst->freeze, inst->grain_size, inst->density,
             inst->evolution, inst->brightness, inst->mix, inst->decay,
             inst->stereo_width, inst->grain_jitter, inst->evo_depth, inst->attack_time,
-            inst->release_time, inst->feedback_cap, inst->tilt_freq, inst->output_level);
+            inst->release_time, inst->feedback_cap, inst->tilt_freq, inst->output_level,
+            inst->noise_mix, inst->noise_tone);
     }
 
     /* CRITICAL: return -1 for unknown keys */
@@ -359,14 +390,22 @@ static void process_block(void *instance, int16_t *buf, int frames) {
     dp.spread_depth  = inst->evo_depth;       /* → spread iterations (reused key) */
     dp.tilt_freq_norm = inst->tilt_freq;
     dp.output_level  = inst->output_level;
+    dp.noise_mix     = inst->noise_mix;
+    dp.noise_tone    = inst->noise_tone;
+    dp.noise_envelope = 0.0f;                 /* filled per-channel in dissolver_channel_process */
+    dp.attack_time   = inst->attack_time;
+    dp.release_time  = inst->release_time;
 
     /* Process L and R independently through spectral DSP pipeline */
     dissolver_channel_process(&inst->ch_l, in_l, out_l, frames, &dp);
     dissolver_channel_process(&inst->ch_r, in_r, out_r, frames, &dp);
 
-    /* Stereo width: phase offset between L and R grain engines */
-    /* Width=0: mono (average L+R), Width=0.5: natural, Width=1: full decorrelation */
+    /* Stereo width as crossfeed blend:
+     * 0 = mono (L=R=mid), 1 = full stereo (independent L/R engines).
+     * L and R already have decorrelated RNG seeds → at width=1 they're
+     * fully independent spectral textures. Crossfeed narrows gradually. */
     float width = inst->stereo_width;
+    float crossfeed = 1.0f - width;  /* 0 at full stereo, 1 at mono */
 
     /* Equal-power dry/wet crossfade */
     float mix_angle = inst->mix * 1.5707963f;
@@ -378,20 +417,11 @@ static void process_block(void *instance, int16_t *buf, int frames) {
         float wet_l = out_l[i];
         float wet_r = out_r[i];
 
-        /* Stereo width: crossfeed between channels */
-        /* At width=0.5 (default), no crossfeed. Below 0.5: mono-ize. Above 0.5: widen. */
-        if (width < 0.5f) {
-            float mono_mix = 1.0f - width * 2.0f;  /* 1 at width=0, 0 at width=0.5 */
+        /* Crossfeed: blend each channel toward mid by crossfeed amount */
+        if (crossfeed > 0.001f) {
             float mid = (wet_l + wet_r) * 0.5f;
-            wet_l = lerpf(wet_l, mid, mono_mix);
-            wet_r = lerpf(wet_r, mid, mono_mix);
-        } else if (width > 0.5f) {
-            float side_boost = (width - 0.5f) * 2.0f;  /* 0 at 0.5, 1 at 1.0 */
-            float mid = (wet_l + wet_r) * 0.5f;
-            float side_l = wet_l - mid;
-            float side_r = wet_r - mid;
-            wet_l = mid + side_l * (1.0f + side_boost);
-            wet_r = mid + side_r * (1.0f + side_boost);
+            wet_l = wet_l + crossfeed * (mid - wet_l);
+            wet_r = wet_r + crossfeed * (mid - wet_r);
         }
 
         float final_l = (dry_gain * in_l[i] + wet_gain * wet_l) * out_gain;

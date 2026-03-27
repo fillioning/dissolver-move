@@ -133,6 +133,7 @@ typedef struct {
     SpectralEngine spectral;
     DecayTail      decay;
     TiltFilter     tilt;
+    float          env_state;   /* noise envelope follower */
 } DissolverChannel;
 
 /* ── Parameters passed per-block ───────────────────────────────────── */
@@ -150,6 +151,11 @@ typedef struct {
     float spread_depth;     /* spread iterations / depth */
     float tilt_freq_norm;   /* tilt crossover 0..1 */
     float output_level;     /* output gain */
+    float noise_mix;        /* noise amount: 0=off, 1=full */
+    float noise_tone;       /* noise color: 0=white, 0.5=pink, 1=brown */
+    float noise_envelope;   /* current envelope value (set by caller per-block) */
+    float attack_time;      /* envelope attack: 0=1ms, 1=500ms */
+    float release_time;     /* envelope release: 0=10ms, 1=2000ms */
 } DissolverParams;
 
 /* ── API ───────────────────────────────────────────────────────────── */

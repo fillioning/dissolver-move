@@ -28,6 +28,13 @@ static inline float rng_phase(uint32_t *state) {
     return (float)(*state & 0xFFFF) * (2.0f * (float)M_PI / 65536.0f);
 }
 
+static inline float rng_float01(uint32_t *state) {
+    *state ^= *state << 13;
+    *state ^= *state >> 17;
+    *state ^= *state << 5;
+    return (float)(*state & 0xFFFF) / 65536.0f;
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    Spectral processing functions
    (derived from PaulXStretch ProcessedStretch.h, rewritten in C)
@@ -39,17 +46,20 @@ static inline float rng_phase(uint32_t *state) {
  *
  * IMPORTANT: modifies `freq` in-place. `tmp` is used as work buffer.
  * After return, `freq` contains the smoothed result.
+ *
+ * bandwidth: 0–0.4, controls IIR coefficient (higher = more smear)
+ * depth_norm: 0–1, controls number of passes (1–4)
  */
 static void spectrum_spread(float *freq, float *tmp, int nfreq,
                             float bandwidth, float depth_norm) {
     if (bandwidth < 0.001f) return;
 
     int passes = 1 + (int)(depth_norm * 3.0f);  /* 1-4 passes */
-    float bw2 = bandwidth * bandwidth;
-    float a_base = 1.0f - powf(2.0f, -bw2 * 10.0f);
 
-    float scale = 8192.0f / (float)nfreq;
-    float a = powf(a_base, scale * (float)passes);
+    /* IIR coefficient: a near 1 = heavy spreading, a near 0 = none.
+     * bandwidth 0→0.4 maps to a 0→~0.92 via squared curve for smooth control. */
+    float bw_norm = bandwidth / 0.4f;  /* normalize to 0–1 */
+    float a = bw_norm * bw_norm * 0.92f;
 
     for (int pass = 0; pass < passes; pass++) {
         /* Forward pass */
@@ -216,29 +226,94 @@ static void spectral_synthesize(SpectralEngine *s, float evolution) {
 }
 
 /**
+ * Inject colored noise into the magnitude spectrum, scaled by input envelope.
+ * Noise color: 0=white (flat), 0.5=pink (1/sqrt(f)), 1=brown (1/f).
+ * Called after dissolve gate, before spectral spread.
+ */
+static void inject_spectral_noise(SpectralEngine *s, const DissolverParams *p) {
+    float mix = p->noise_mix;
+    float tone = p->noise_tone;
+    float env = p->noise_envelope;
+
+    /* Compute average magnitude for relative scaling */
+    float avg_mag = 0.0f;
+    for (int i = 1; i < SPEC_HALF_SIZE; i++) {
+        avg_mag += s->freq_proc[i];
+    }
+    avg_mag /= (float)(SPEC_HALF_SIZE - 1);
+    if (avg_mag < 1e-10f) return;
+
+    float noise_gain = avg_mag * mix * env * 12.0f;
+
+    for (int i = 1; i < SPEC_HALF_SIZE; i++) {
+        float rand_val = rng_float01(&s->rng);
+        float fi = (float)(i < 4 ? 4 : i);  /* floor bin index to avoid extreme LF boost */
+
+        /* Spectral slope: white=flat, pink=1/sqrt(f), brown=1/f */
+        float scale;
+        if (tone < 0.5f) {
+            float t = tone * 2.0f;
+            float pink = 1.0f / sqrtf(fi);
+            scale = lerpf(1.0f, pink, t);
+        } else {
+            float t = (tone - 0.5f) * 2.0f;
+            float pink = 1.0f / sqrtf(fi);
+            float brown = 1.0f / fi;
+            scale = lerpf(pink, brown, t);
+        }
+
+        s->freq_proc[i] += rand_val * noise_gain * scale;
+    }
+}
+
+/**
  * Process the magnitude spectrum through the dissolution chain.
  * freq_proc is pre-loaded with stretch-smoothed magnitudes.
  */
 static void spectral_process_magnitudes(SpectralEngine *s, const DissolverParams *p) {
-    /* 1. Dissolve — spectral gate
-     * Removes weak spectral bins (noise floor), keeps strong harmonics.
-     * At 0: everything passes. At 1: only the strongest harmonics survive.
-     * Result: cleaner, more ethereal pad — no added noise. */
+    /* 1. Dissolve — frequency-relative spectral gate
+     * Removes weak bins relative to their LOCAL spectral neighborhood,
+     * not global RMS. This prevents the gate from acting as a low-pass filter
+     * (natural audio spectra roll off at HF, so global RMS gates HF first).
+     *
+     * At 0: everything passes. At 1: only local peaks survive.
+     * Result: cleaner, more ethereal pad without HF loss. */
     if (p->smoothing > 0.01f) {
-        float sum_sq = 0.0f;
+        /* Build local spectral envelope via bidirectional IIR smoothing.
+         * Window ~32 bins (~340Hz at 44.1k/4096) — wide enough to capture
+         * the local energy floor without following individual harmonics. */
+        float env_a = 0.94f;  /* smoothing coefficient for envelope */
+        float *env = s->spread_tmp;  /* reuse: dissolve runs before spread */
+
+        /* Forward pass */
+        env[0] = s->freq_proc[0];
         for (int i = 1; i < SPEC_HALF_SIZE; i++) {
-            sum_sq += s->freq_proc[i] * s->freq_proc[i];
+            env[i] = env[i - 1] * env_a + s->freq_proc[i] * (1.0f - env_a);
         }
-        float rms = sqrtf(sum_sq / (float)(SPEC_HALF_SIZE - 1));
-        if (rms > 1e-10f) {
-            float thresh = rms * p->smoothing * 2.0f;
-            for (int i = 1; i < SPEC_HALF_SIZE; i++) {
+        /* Backward pass — average with forward for symmetric envelope */
+        float bwd = env[SPEC_HALF_SIZE - 1];
+        for (int i = SPEC_HALF_SIZE - 2; i >= 0; i--) {
+            bwd = bwd * env_a + s->freq_proc[i] * (1.0f - env_a);
+            env[i] = (env[i] + bwd) * 0.5f;
+        }
+
+        /* Gate: threshold is a fraction of the local envelope */
+        float gate_strength = p->smoothing * 1.5f;
+        for (int i = 1; i < SPEC_HALF_SIZE; i++) {
+            if (env[i] > 1e-10f) {
+                float thresh = env[i] * gate_strength;
                 if (s->freq_proc[i] < thresh) {
                     float ratio = s->freq_proc[i] / thresh;
                     s->freq_proc[i] *= ratio;  /* soft quadratic gate */
                 }
             }
         }
+    }
+
+    /* 1.5 Noise injection — envelope-driven colored noise
+     * After gate (so dissolve controls what survives), before spread (noise gets smeared) */
+    if (p->noise_mix > 0.01f && p->noise_envelope > 0.001f) {
+        inject_spectral_noise(s, p);
     }
 
     /* 2. Spectral spread — log-frequency smearing
@@ -462,9 +537,35 @@ void dissolver_channel_process(
     int frames,
     const DissolverParams *p)
 {
+    /* Envelope follower for noise generator (tracks input amplitude) */
+    float attack_ms  = 1.0f + p->attack_time * 499.0f;    /* 1–500ms */
+    float release_ms = 10.0f + p->release_time * 1990.0f;  /* 10–2000ms */
+    float a_coeff = expf(-1000.0f / (attack_ms * (float)DSP_SR));
+    float r_coeff = expf(-1000.0f / (release_ms * (float)DSP_SR));
+
+    for (int i = 0; i < frames; i++) {
+        float abs_in = fabsf(input[i]);
+        if (abs_in > ch->env_state) {
+            ch->env_state = a_coeff * ch->env_state + (1.0f - a_coeff) * abs_in;
+        } else {
+            ch->env_state = r_coeff * ch->env_state + (1.0f - r_coeff) * abs_in
+                            + DENORMAL_GUARD;
+        }
+    }
+
+    /* Local params copy with envelope value */
+    DissolverParams lp = *p;
+    lp.noise_envelope = ch->env_state;
+
+    /* Attenuate input for spectral processing (-6dB wet headroom) */
+    float scaled_input[128];
+    for (int i = 0; i < frames; i++) {
+        scaled_input[i] = input[i] * 0.5f;
+    }
+
     /* Spectral dissolution (analysis → stretch smooth → spread → tonal → freeze → synthesis) */
     float spectral_out[128];
-    spectral_process(&ch->spectral, input, spectral_out, frames, p);
+    spectral_process(&ch->spectral, scaled_input, spectral_out, frames, &lp);
 
     /* Update decay params */
     float fb = p->decay_amt * p->feedback_cap;
