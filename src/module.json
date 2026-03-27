@@ -2,7 +2,7 @@
     "id": "dissolver",
     "name": "Dissolver",
     "abbrev": "DSLVR",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "Spectral smearing pad generator — kills transients, preserves harmonic content, blends temporality into evolving pads.",
     "author": "fillioning",
     "dsp": "dissolver.so",
