@@ -2,7 +2,7 @@
     "id": "dissolver",
     "name": "Dissolver",
     "abbrev": "DSLVR",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "Spectral smearing pad generator — kills transients, preserves harmonic content, blends temporality into evolving pads.",
     "author": "fillioning",
     "dsp": "dissolver.so",
@@ -53,6 +53,26 @@
                     ]
                 }
             }
-        }
+        },
+        "chain_params": [
+            {"key": "smoothing",     "name": "Dissolve",      "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "freeze",        "name": "Freeze",        "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "grain_size",    "name": "Stretch",       "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "density",       "name": "Spread",        "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "evolution",     "name": "Evolution",     "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "decay",         "name": "Decay",         "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "brightness",    "name": "Tone",          "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "mix",           "name": "Dry/Wet",       "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "noise_mix",     "name": "Noise Mix",     "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "noise_tone",    "name": "Noise Tone",    "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "stereo_width",  "name": "Stereo Width",  "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "grain_jitter",  "name": "Compress",      "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "evo_depth",     "name": "Spread Depth",  "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "feedback_cap",  "name": "Feedback Cap",  "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "tilt_freq",     "name": "Tilt Freq",     "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "output_level",  "name": "Output Level",  "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "attack_time",   "name": "Attack Time",   "type": "float", "min": 0, "max": 1, "step": 0.01},
+            {"key": "release_time",  "name": "Release Time",  "type": "float", "min": 0, "max": 1, "step": 0.01}
+        ]
     }
 }
