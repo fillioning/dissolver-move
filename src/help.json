@@ -1,0 +1,107 @@
+{
+  "title": "Dissolver",
+  "children": [
+    {
+      "title": "About",
+      "lines": [
+        "Spectral smearing pad",
+        "generator. Kills",
+        "transients, preserves",
+        "harmonic content,",
+        "blends temporality",
+        "into evolving pads.",
+        "",
+        "Audio FX. Feed it",
+        "anything (drums,",
+        "vocals, guitars):",
+        "extracts the sustained",
+        "harmonic essence,",
+        "freezing & blending it",
+        "into a living texture.",
+        "",
+        "Inspired by GRM Tools",
+        "Evolution."
+      ]
+    },
+    {
+      "title": "Page: Dissolver",
+      "lines": [
+        "K1 Smoothing",
+        "    0% = full attack",
+        "    100% = transients",
+        "    erased",
+        "K2 Freeze",
+        "    0% = live spectrum",
+        "    100% = held drone",
+        "K3 Grain Size",
+        "    5 ms = detail",
+        "    85 ms = wash",
+        "K4 Density",
+        "    grain overlap",
+        "K5 Evolution",
+        "    spectrum drift",
+        "    over time",
+        "K6 Decay",
+        "    pad tail length",
+        "K7 Brightness",
+        "    spectral tilt",
+        "    dark<center>air",
+        "K8 Dry/Wet"
+      ]
+    },
+    {
+      "title": "Page: Advanced",
+      "lines": [
+        "K1 Noise Mix",
+        "    coloured noise",
+        "    layer in the pad",
+        "K2 Noise Tone",
+        "    white > pink",
+        "    > brown",
+        "K3 Stereo Width",
+        "K4 Grain Jitter",
+        "    random position",
+        "    offset per grain",
+        "K5 Evo Depth",
+        "    extent of",
+        "    spectrum drift",
+        "K6 Feedback Cap",
+        "    self-feed limit",
+        "K7 Tilt Freq",
+        "    pivot for the",
+        "    brightness shelf",
+        "K8 Output Level"
+      ]
+    },
+    {
+      "title": "Tips",
+      "lines": [
+        "Feed a drum loop +",
+        " Smoothing 100%:",
+        " rhythm vanishes,",
+        " harmonic body stays",
+        " as a sustained pad.",
+        "",
+        "Freeze ~80% + slow",
+        " Evolution: captures",
+        " a vocal phrase as a",
+        " slowly shifting",
+        " drone.",
+        "",
+        "Small Grain Size +",
+        " high Density:",
+        " shimmering granular",
+        " cloud.",
+        "",
+        "Large Grain Size +",
+        " low Density: lo-fi",
+        " tape-loop smear.",
+        "",
+        "Mix ~60% keeps a",
+        " transient ghost",
+        " under the pad for",
+        " rhythmic anchoring."
+      ]
+    }
+  ]
+}

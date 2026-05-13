@@ -43,6 +43,7 @@ jobs:
               -I/repo/src/dsp \
               -lm
             cp /repo/module.json /repo/dist/dissolver/
+            if [ -f /repo/src/help.json ]; then cp /repo/src/help.json /repo/dist/dissolver/; fi
             cd /repo && tar -czf dist/dissolver-module.tar.gz -C dist dissolver
           "
 
