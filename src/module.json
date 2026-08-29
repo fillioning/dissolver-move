@@ -20,7 +20,8 @@
                     "params": [
                         { "level": "Dissolver", "label": "Dissolver" },
                         { "level": "Advanced", "label": "Advanced" }
-                    ]
+                    ,
+                        { "key": "mix", "short_name": "Mix" }]
                 },
                 "Dissolver": {
                     "label": "Dissolver",
